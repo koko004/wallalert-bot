@@ -16,6 +16,21 @@ pip3 install -r requirements.txt
 
 ## Docker compose
 
+### x64
+```bash
+version: '3.3'
+services:
+    wallbot-docker:
+        image: koko004/wallalert:latest
+        container_name: wallabot
+        restart: always
+        environment:
+            - BOT_TOKEN=TOKEN
+        volumes:
+          - ~/WALLALERT/app:/app
+          - ~/WALLALERT/logs:/logs
+```
+### ARMv7
 ```bash
 version: '3.3'
 services:
