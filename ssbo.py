@@ -1,4 +1,4 @@
-#!/usr/bin/python3.5
+#!/usr/bin/python3.11
 
 import requests
 import time
@@ -13,8 +13,10 @@ import sys
 import threading
 import os
 import locale
+from fake_useragent import UserAgent
 
 TOKEN = os.getenv("BOT_TOKEN", "Bot Token does not exist")
+
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 URL_ITEMS = "https://api.wallapop.com/api/v3/general/search"
 PROFILE = os.getenv("PROFILE")
@@ -79,10 +81,29 @@ def get_url_list(search):
 
 def get_items(url, chat_id):
     try:
-        resp = requests.get(url=url)
-        data = resp.json()
-        # print(data)
-        for x in data['search_objects']:
+   
+        ua = UserAgent()
+
+        headers = {
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'es,ru;q=0.9,en;q=0.8,de;q=0.7,pt;q=0.6',
+            'Connection': 'keep-alive',
+            'DeviceOS': '0',
+            'Origin': 'https://es.wallapop.com',
+            'Referer': 'https://es.wallapop.com/',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
+            'User-Agent': f'{ua.random}',
+            'X-AppVersion': '75491',
+            'X-DeviceOS': '0',
+            'sec-ch-ua-mobile': '?0',
+        }
+
+        response = requests.get(url=url, headers=headers)
+        data = response.json()
+        search_objects = data.get('search_objects')
+        for x in search_objects:
             # print('\t'.join((datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
             #                  str(x['id']), str(x['price']), x['title'], x['user']['id'])))
             # logging.info('\t'.join((str(x['id']), str(x['price']), x['title'], x['user']['id'])))
@@ -186,7 +207,7 @@ def add_search(message):
         if len(rango) > 1:
             cs.max_price = rango[1].strip()
     if len(token) > 2:
-        cs.cat_ids = sub('[\s+]', '', ','.join(token[2:]))
+        cs.cat_ids = sub('[\s+]', "", ','.join(token[2:]))
         if len(cs.cat_ids) == 0:
             cs.cat_ids = None
     cs.username = message.from_user.username
@@ -229,7 +250,7 @@ def wallapop():
         # Recupera de db las búsquedas que hay que hacer en wallapop con sus respectivos chats_id
         for search in db.get_chats_searchs():
             u = get_url_list(search)
-
+            print(u)
             # Lanza las búsquedas y notificaciones ...
             get_items(u, search.chat_id)
 
