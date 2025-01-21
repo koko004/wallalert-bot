@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  wallalert:
+    network_mode: host
+    restart: always
+    environment:
+      - BOT_TOKEN=6839617734:AAFIQuu-TkNXpx3oejGdbgd2MCFn6RH7GB4
+    image: koko004/wallalert:latest
+    volumes:
+      - ~/WALLALERT/app:/app
+      - ~/WALLALERT/logs:/logs
