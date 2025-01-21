@@ -20,6 +20,7 @@ git clone https://github.com/koko004/wallalert-bot
 mv wallalert-bot/app/* app/
 
 # Docker-compose
+cd wallalert-bot
 docker-compose up -d --force-recreate --remove-orphans
 
 echo "Instalacion completada"
