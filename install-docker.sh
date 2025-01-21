@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Auto Install Docker
-
+cd ~
 # Install Docker and Docker-compose
 apt update && apt install docker docker-compose -y
 
@@ -9,14 +9,15 @@ apt update && apt install docker docker-compose -y
 apt-get install git -y
 
 # Folders
-mkdir ~/WALLALERT
-mkdir ~/WALLALERT/app
-mkdir ~/WALLALERT/logs
+cd ~
+mkdir WALLALERT
+mkdir WALLALERT/app
+mkdir WALLALERT/logs
 
 # Download app folder
-cd ~/WALLALERT/
+cd WALLALERT/
 git clone https://github.com/koko004/wallalert-bot
-mv * wallalert-bot/app ~/WALLALERT/app
+mv wallalert-bot/app/* app/
 
 # Docker-compose
 docker-compose up -d --force-recreate --remove-orphans
