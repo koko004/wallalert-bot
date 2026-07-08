@@ -1,0 +1,6 @@
+data/
+logs/
+*.sqlite
+*.log
+__pycache__/
+.env

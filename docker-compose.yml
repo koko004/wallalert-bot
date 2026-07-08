@@ -1,0 +1,9 @@
+services:
+  wallalert-bot:
+    image: koko004/wallalert:latest
+    container_name: wallalert
+    volumes:
+      - ./data:/data #Make DB persistent
+    environment:
+      - BOT_TOKEN=TU_TOKEN_AQUI
+    restart: unless-stopped

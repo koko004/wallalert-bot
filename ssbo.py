@@ -235,11 +235,16 @@ pathlog = 'wallbot.log'
 if PROFILE is None:
     pathlog = '/logs/' + pathlog
 
+log_format = '%(asctime)s %(levelname)s %(message)s'
 logging.basicConfig(
-    handlers=[RotatingFileHandler(pathlog, maxBytes=1000000, backupCount=10)],
-#    filename='wallbot.log',
     level=logging.INFO,
-    format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
+    format=log_format,
+    datefmt='%m/%d/%Y %H:%M:%S',
+    handlers=[
+        RotatingFileHandler(pathlog, maxBytes=1000000, backupCount=10),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
 locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
 
@@ -271,26 +276,85 @@ def wallapop():
         continue
 
 
+def verify_token():
+    try:
+        response = requests.get(f"{URL}getMe", timeout=10)
+        data = response.json()
+        if data.get("ok"):
+            bot_info = data.get("result", {})
+            logging.info("Token valido. Bot: @%s (ID: %s)", bot_info.get("username"), bot_info.get("id"))
+            return True
+        else:
+            error_code = data.get("error_code", "unknown")
+            description = data.get("description", "unknown")
+            logging.error("Token invalido. Error %s: %s", error_code, description)
+            return False
+    except Exception as e:
+        logging.error("No se pudo verificar el token: %s", e)
+        return False
+
+
+def start_polling():
+    logging.info("Polling thread iniciado")
+    try:
+        bot.polling(none_stop=True, timeout=3000)
+        logging.warning("Polling termino inesperadamente (retorno sin error)")
+    except telebot.apihelper.ApiTelegramException as e:
+        if e.error_code == 409:
+            logging.error("CONFLICTO: El token esta siendo usado por otra instancia. Deteniendo...")
+            sys.exit(1)
+        else:
+            logging.error("Error de Telegram (code %s): %s", e.error_code, e.description)
+    except Exception as e:
+        logging.error("Error inesperado en polling: %s", e)
+    logging.error("Polling thread finalizado")
+
+
 def recovery(times):
     try:
         time.sleep(times)
-        logging.info("Conexión a Telegram.")
-        print("Conexión a Telegram")
-        bot.polling(none_stop=True, timeout=3000)
+        logging.info("Iniciando polling de Telegram...")
+        t = threading.Thread(target=start_polling, daemon=True)
+        t.start()
+        time.sleep(3)
+        if t.is_alive():
+            logging.info("Conexion con Telegram exitosa. Bot activo y escuchando mensajes.")
+        else:
+            logging.error("El polling se detuvo inesperadamente.")
+            if times > 16:
+                times = 16
+            recovery(times * 2)
     except Exception as e:
-        logging.error("Ha ocurrido un error con la llamada a Telegram. Se reintenta la conexión", e)
-        print("Ha ocurrido un error con la llamada a Telegram. Se reintenta la conexión")
+        logging.error("Error al iniciar conexion: %s. Reintentando...", e)
         if times > 16:
             times = 16
-        recovery(times*2)
+        recovery(times * 2)
 
 
 def main():
-    print("JanJanJan starting...")
-    logging.info("JanJanJan starting...")
+    logging.info("=== Iniciando WallAlert Bot ===")
+    logging.info("Version: %s", readVersion())
+
+    if TOKEN == "Bot Token does not exist":
+        logging.error("BOT_TOKEN no configurado. Saliendo...")
+        sys.exit(1)
+
+    logging.info("Verificando token...")
+    if not verify_token():
+        logging.error("Token invalido o en uso por otra instancia. Saliendo...")
+        sys.exit(1)
+
+    logging.info("Configurando base de datos...")
     db.setup(readVersion())
-    threading.Thread(target=wallapop).start()
+
+    logging.info("Iniciando busquedas en Wallapop...")
+    threading.Thread(target=wallapop, daemon=True).start()
+
+    logging.info("Bot listo y conectado.")
     recovery(1)
+
+    while True:
+        time.sleep(60)
 
 
 def readVersion():
